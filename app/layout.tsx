@@ -15,6 +15,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" data-theme="light">
       <head>
         <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9709583671943250"
+          crossOrigin="anonymous"
+        />
+        <script
           dangerouslySetInnerHTML={{
             __html: `try { if (localStorage.getItem("filefix-theme") === "light") document.documentElement.dataset.theme = "light"; } catch (_) {}`,
           }}

@@ -34,7 +34,7 @@ Image and PDF conversion operations can be cancelled between processing steps. C
 
 ## Ad slots
 
-`components/AdSlot.tsx` exports the reusable `<AdSlot />` component. It currently returns no content in development and a reserved, unobtrusive container in production. A future ad integration can be added inside this component; no tool, download, or upload component needs to know about the ad provider. Follow the provider’s consent, layout, and policy requirements before enabling ads.
+`components/AdSlot.tsx` exports the reusable `<AdSlot />` component. Set `NEXT_PUBLIC_ADSENSE_CLIENT_ID` and `NEXT_PUBLIC_ADSENSE_HOME_SLOT_ID` to the public values from Google AdSense to enable the responsive display ad. The global AdSense script is added from `app/layout.tsx`; ads remain reserved between sections and never appear inside the workflow controls.
 
 ## Known limitations
 
