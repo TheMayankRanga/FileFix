@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+coverage/
+.vercel/
+*.tsbuildinfo
+.env*
+!.env.example
+file.jpe
