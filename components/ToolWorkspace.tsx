@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { acceptedImages, formatLabel, imagePresets } from "@/constants/presets";
 import { downloadBlob, formatBytes, inspectImage, processImage } from "@/lib/image-processing";
-import type { ImageFormat, ProcessedImage, ToolMode } from "@/types/filefix";
+import type { FitMode, ImageFormat, ProcessedImage, ToolMode } from "@/types/filefix";
 
 const modes: { id: ToolMode; label: string }[] = [
   { id: "fit", label: "Make it fit" },
@@ -37,6 +37,7 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
   const [height, setHeight] = useState("230");
   const [keepRatio, setKeepRatio] = useState(false);
   const [format, setFormat] = useState<ImageFormat>("image/jpeg");
+  const [fitMode, setFitMode] = useState<FitMode>("stretch");
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -198,6 +199,7 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
         height: outputHeight,
         format,
         maxBytes,
+        fitMode,
       }, (value) => {
         setProgress(value);
         if (cancelRequested.current) throw new Error("PROCESSING_CANCELLED");
@@ -435,6 +437,7 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
             <div className="field-group"><label className="field-label" htmlFor="height">Height <span>px</span></label><input id="height" type="number" min="1" max="12000" value={height} disabled={busy} onChange={(event) => changeHeight(event.target.value)} /></div>
           </div>}
           {mode !== "compress" && <label className="checkbox-label"><input type="checkbox" checked={keepRatio} disabled={busy} onChange={(event) => setKeepRatio(event.target.checked)} /> Keep aspect ratio</label>}
+          <div className="field-group"><label className="field-label" htmlFor="fit-mode">Fit mode</label><select id="fit-mode" value={fitMode} disabled={busy} onChange={(event) => setFitMode(event.target.value as FitMode)}><option value="stretch">Stretch to exact size</option><option value="crop">Crop to fill</option><option value="pad">Pad to fit</option></select></div>
           <div className="field-group format-field"><label className="field-label" htmlFor="image-format">Output format</label><select id="image-format" value={format} disabled={busy} onChange={(event) => setFormat(event.target.value as ImageFormat)}><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select></div>
           <button className="button process-button" type="button" onClick={() => void runImageProcessing()} disabled={busy}>
             {busy ? <><span className="spinner" /> Fitting your image…</> : <>{mode === "compress" ? "Compress image" : mode === "resize" ? "Resize image" : "Make it fit"} <span aria-hidden="true">→</span></>}
@@ -471,12 +474,13 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
 
       {result && resultUrl && file && (
         <div className="result-panel" aria-live="polite">
-          <div className="result-heading"><span className={notice.startsWith("Every") ? "result-check" : "result-warning"} aria-hidden="true">{notice.startsWith("Every") ? "✓" : "!"}</span><div><strong>{notice.startsWith("Every") ? "Your image is ready" : "Closest result is ready"}</strong><span>{formatLabel(result.format)} · {result.width} × {result.height} px</span></div></div>
+          <div className="result-heading"><span className={notice.startsWith("Every") ? "result-check" : "result-warning"} aria-hidden="true">{notice.startsWith("Every") ? "✓" : "!"}</span><div><strong>{notice.startsWith("Every") ? "Your image is ready" : "Closest result is ready"}</strong><span>{formatLabel(result.format)} · {result.width} × {result.height} px · {result.fitMode === "crop" ? "Cropped to fill" : result.fitMode === "pad" ? "Padded to fit" : "Stretched to exact size"}</span></div></div>
           <div className="result-comparison">
             <div className="comparison-preview"><span>BEFORE</span><img src={previewUrl} alt="Original image preview" /><strong>{formatBytes(file.size)}</strong></div>
             <span className="comparison-arrow" aria-hidden="true">→</span>
             <div className="comparison-preview"><span>AFTER</span><img src={resultUrl} alt="Processed image preview" /><strong>{formatBytes(result.blob.size)}</strong></div>
           </div>
+          <p className="fit-preview-note">Preview shows the exact file that will be downloaded. {result.fitMode === "crop" ? "The image was cropped from the edges to fill the requested dimensions." : result.fitMode === "pad" ? "The image keeps its proportions and empty space was added to reach the requested dimensions." : "The image was scaled directly to the requested dimensions, which can change its proportions."}</p>
           <div className="verification-list">
             {mode !== "resize" || targetSize.trim() ? <span className={result.blob.size <= Number(targetSize) * (sizeUnit === "MB" ? 1024 * 1024 : 1024) ? "verified" : "not-verified"}>
               {result.blob.size <= Number(targetSize) * (sizeUnit === "MB" ? 1024 * 1024 : 1024) ? "✓" : "!"} Under {targetSize} {sizeUnit}</span> : null}

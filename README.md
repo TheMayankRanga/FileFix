@@ -23,7 +23,7 @@ Import the repository into Vercel, keep the detected Next.js framework settings,
 
 - Make it fit: maximum size, dimensions, output format, editable presets, and per-constraint verification.
 - Compress image: iterative browser Canvas encoding with a chosen size limit.
-- Resize image: exact dimensions with an optional size target and aspect-ratio control.
+- Resize image: exact dimensions with an optional size target, aspect-ratio control, and explicit Stretch, Crop to fill, or Pad to fit modes. The result preview and download card explain the selected transformation.
 - Images to PDF: multiple JPG/PNG/WebP images, reorder controls, A4 or image-sized pages, orientation, and margins.
 - PDF to images: all pages or selected page numbers/ranges, JPG or PNG, individual downloads, and ZIP download.
 
@@ -39,7 +39,8 @@ Image and PDF conversion operations can be cancelled between processing steps. C
 ## Known limitations
 
 - Image processing currently accepts JPG/JPEG, PNG, and WebP files up to 20 MB. Very large dimensions or a very low size target may exceed browser memory or be impossible to satisfy. Such size limits are reported rather than treated as successful.
-- Image resizing scales to the requested exact width and height; it does not crop to preserve the source composition. With “Keep aspect ratio” enabled, dimensions update proportionally.
+- Image resizing defaults to direct scaling for backward compatibility. Crop and pad modes explicitly control how a different target aspect ratio is handled. With “Keep aspect ratio” enabled, dimensions update proportionally while editing.
+- For exact dimensions with a different aspect ratio, choose Stretch to scale directly, Crop to fill and remove edge content, or Pad to fit and add empty space. The preview shown before download is the generated output.
 - Browser Canvas encoding may not preserve metadata, animation, or all color profiles. PNG output can be larger than the source or chosen maximum.
 - PDFs are limited to 100 MB. Browser memory, PDF encryption, unusual PDF structures, and browser capabilities can limit rendering or export. PDF-to-image output uses a bounded rendering scale.
 - Processing runs on the main browser thread. Progress is surfaced during iterative image encoding, but very large files may still temporarily make a low-memory device less responsive.

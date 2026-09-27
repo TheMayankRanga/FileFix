@@ -1,5 +1,5 @@
 import { maxImageBytes } from "@/constants/presets";
-import type { ImageFormat, ProcessedImage } from "@/types/filefix";
+import type { FitMode, ImageFormat, ProcessedImage } from "@/types/filefix";
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -42,7 +42,7 @@ export async function inspectImage(file: File) {
 
 export async function processImage(
   file: File,
-  options: { width?: number; height?: number; format: ImageFormat; maxBytes?: number },
+  options: { width?: number; height?: number; format: ImageFormat; maxBytes?: number; fitMode?: FitMode },
   onProgress?: (progress: number) => void,
 ): Promise<{ result: ProcessedImage; meetsSizeLimit: boolean }> {
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -67,7 +67,25 @@ export async function processImage(
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, width, height);
   }
-  context.drawImage(image, 0, 0, width, height);
+  const fitMode = options.fitMode ?? "stretch";
+  if (fitMode === "stretch") {
+    context.drawImage(image, 0, 0, width, height);
+  } else {
+    const sourceRatio = image.naturalWidth / image.naturalHeight;
+    const targetRatio = width / height;
+    const cover = fitMode === "crop";
+    const scale = cover
+      ? Math.max(width / image.naturalWidth, height / image.naturalHeight)
+      : Math.min(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = image.naturalWidth * scale;
+    const drawHeight = image.naturalHeight * scale;
+    const offsetX = (width - drawWidth) / 2;
+    const offsetY = (height - drawHeight) / 2;
+    if (fitMode === "pad" && options.format === "image/png" && sourceRatio !== targetRatio) {
+      context.clearRect(0, 0, width, height);
+    }
+    context.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+  }
 
   let best: Blob;
   if (!options.maxBytes || options.format === "image/png") {
@@ -103,7 +121,7 @@ export async function processImage(
     }
   }
   return {
-    result: { blob: best, width, height, format: options.format },
+    result: { blob: best, width, height, format: options.format, fitMode },
     meetsSizeLimit: !options.maxBytes || best.size <= options.maxBytes,
   };
 }
