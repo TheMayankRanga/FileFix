@@ -14,10 +14,10 @@ export default function HomePage() {
       <section className="hero page-shell">
         <div className="hero-copy">
           <span className="eyebrow"><span className="eyebrow-dot" /> FILEFIX · YOUR UPLOAD TOOLKIT</span>
-          <h1>Get every file <span>upload-ready.</span></h1>
-          <p>Tell us the size, dimensions, and format you need. FileFix makes your image fit — quickly and without the guesswork.</p>
+          <h1>Make your file fit <span>any upload requirement.</span></h1>
+          <p>Set the size, dimensions, and format. FileFix does the rest.</p>
           <div className="hero-actions">
-            <a className="button" href="#tool">Start with an image <span aria-hidden="true">→</span></a>
+            <a className="button" href="#tool">Tell us what you need <span aria-hidden="true">→</span></a>
             <span className="trust-note"><span aria-hidden="true">✳</span> Free <i /> No signup <i /> Browser-based</span>
           </div>
         </div>
@@ -36,10 +36,10 @@ export default function HomePage() {
 
       <section className="tool-section page-shell" id="tool">
         <div className="section-heading">
-          <div><span className="eyebrow">THE FILEFIX TOOLKIT</span><h2>Make it fit.</h2></div>
-          <p>One quick upload. The requirements that matter to you.</p>
+          <div><span className="eyebrow">THE MAIN WORKFLOW</span><h2>What does the upload require?</h2></div>
+          <p>Give us the requirements you know. Upload your image when you’re ready.</p>
         </div>
-        <ToolWorkspace initialMode="fit" />
+        <ToolWorkspace initialMode="fit" fitFirst />
       </section>
 
       <div className="page-shell"><AdSlot /></div>
@@ -57,7 +57,7 @@ export default function HomePage() {
       </section>
 
       <section className="tools-strip page-shell">
-        <div><span className="eyebrow">MORE WAYS TO GET IT RIGHT</span><h2>All the essentials, in one place.</h2></div>
+        <div><span className="eyebrow">NEED SOMETHING ELSE?</span><h2>More ways to get it right.</h2></div>
         <div className="tool-links">
           <Link href="/compress-image">Compress an image <span>↗</span></Link>
           <Link href="/resize-image">Resize an image <span>↗</span></Link>

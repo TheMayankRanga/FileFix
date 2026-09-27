@@ -23,7 +23,7 @@ function getError(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong while processing this file. Please try again.";
 }
 
-export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
+export function ToolWorkspace({ initialMode, fitFirst = false }: { initialMode: ToolMode; fitFirst?: boolean }) {
   const [mode, setMode] = useState(initialMode);
   const [file, setFile] = useState<File | null>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -31,12 +31,12 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const [result, setResult] = useState<ProcessedImage | null>(null);
   const [resultUrl, setResultUrl] = useState("");
-  const [targetSize, setTargetSize] = useState(initialMode === "resize" ? "" : "50");
+  const [targetSize, setTargetSize] = useState(initialMode === "resize" || fitFirst ? "" : "50");
   const [sizeUnit, setSizeUnit] = useState<"KB" | "MB">("KB");
-  const [width, setWidth] = useState("200");
-  const [height, setHeight] = useState("230");
+  const [width, setWidth] = useState(fitFirst ? "" : "200");
+  const [height, setHeight] = useState(fitFirst ? "" : "230");
   const [keepRatio, setKeepRatio] = useState(false);
-  const [format, setFormat] = useState<ImageFormat>("image/jpeg");
+  const [format, setFormat] = useState<ImageFormat | "">(fitFirst ? "" : "image/jpeg");
   const [fitMode, setFitMode] = useState<FitMode>("stretch");
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -149,7 +149,10 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
     setFile(null);
     setFiles([]);
     setDimensions(null);
-    setTargetSize(nextMode === "resize" ? "" : "50");
+    setTargetSize(nextMode === "resize" || (fitFirst && nextMode === "fit") ? "" : "50");
+    setWidth(fitFirst && nextMode === "fit" ? "" : "200");
+    setHeight(fitFirst && nextMode === "fit" ? "" : "230");
+    setFormat(fitFirst && nextMode === "fit" ? "" : "image/jpeg");
     resetResult();
   }
 
@@ -186,18 +189,19 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
     setNotice("");
     setResult(null);
     try {
-      const maxBytes = mode === "resize" && !targetSize.trim()
-        ? undefined
-        : Number(targetSize) * (sizeUnit === "MB" ? 1024 * 1024 : 1024);
-      if (mode !== "resize" || targetSize.trim()) {
+      const maxBytes = targetSize.trim()
+        ? Number(targetSize) * (sizeUnit === "MB" ? 1024 * 1024 : 1024)
+        : undefined;
+      if (targetSize.trim()) {
         if (!Number.isFinite(maxBytes) || (maxBytes ?? 0) < 1) throw new Error("Enter a valid maximum file size.");
       }
-      const outputWidth = mode === "compress" ? dimensions?.width : Number(width);
-      const outputHeight = mode === "compress" ? dimensions?.height : Number(height);
+      const outputWidth = mode === "compress" ? dimensions?.width : width.trim() ? Number(width) : undefined;
+      const outputHeight = mode === "compress" ? dimensions?.height : height.trim() ? Number(height) : undefined;
+      const outputFormat = format || (file.type as ImageFormat) || "image/jpeg";
       const processed = await processImage(file, {
         width: outputWidth,
         height: outputHeight,
-        format,
+        format: outputFormat,
         maxBytes,
         fitMode,
       }, (value) => {
@@ -365,7 +369,7 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
   const selectedFile = isPdf ? files[0] : file;
 
   return (
-    <section className="workspace-card" aria-label={heading}>
+    <section className={fitFirst ? "workspace-card fit-first-workspace" : "workspace-card"} aria-label={heading}>
       <div className="workspace-top">
         <div><span className="eyebrow">QUICK FILE FIX</span><h2>{heading}</h2></div>
         <span className="local-badge"><span /> Runs in your browser</span>
@@ -424,12 +428,12 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
         </div>
       )}
 
-      {isImageMode && file && !result && (
+      {isImageMode && (file || (fitFirst && mode === "fit")) && !result && (
         <div className="controls">
           {mode !== "compress" && <div className="preset-wrap"><label className="field-label" htmlFor="preset">Start with a preset <span>optional</span></label>
             <select id="preset" defaultValue="" disabled={busy} onChange={(event) => applyPreset(event.target.value)}><option value="">Choose a starting point</option>{imagePresets.map((preset) => <option key={preset.name} value={preset.name}>{preset.name}</option>)}</select>
           </div>}
-          {mode !== "resize" && <div className="field-group"><label className="field-label" htmlFor="max-size">Maximum file size</label><div className="size-input-row"><input id="max-size" type="number" min="1" value={targetSize} disabled={busy} onChange={(event) => setTargetSize(event.target.value)} /><select aria-label="Size unit" value={sizeUnit} disabled={busy} onChange={(event) => setSizeUnit(event.target.value as "KB" | "MB")}><option>KB</option><option>MB</option></select></div></div>}
+          {mode !== "resize" && <div className="field-group"><label className="field-label" htmlFor="max-size">Maximum file size <span>optional</span></label><div className="size-input-row"><input id="max-size" type="number" min="1" placeholder="No limit" value={targetSize} disabled={busy} onChange={(event) => setTargetSize(event.target.value)} /><select aria-label="Size unit" value={sizeUnit} disabled={busy} onChange={(event) => setSizeUnit(event.target.value as "KB" | "MB")}><option>KB</option><option>MB</option></select></div></div>}
           {mode === "resize" && <div className="field-group"><label className="field-label" htmlFor="max-size">Maximum file size <span>optional</span></label><div className="size-input-row"><input id="max-size" type="number" min="1" placeholder="No limit" value={targetSize} disabled={busy} onChange={(event) => setTargetSize(event.target.value)} /><select aria-label="Size unit" value={sizeUnit} disabled={busy} onChange={(event) => setSizeUnit(event.target.value as "KB" | "MB")}><option>KB</option><option>MB</option></select></div></div>}
           {mode !== "compress" && <div className="dimensions-fields">
             <div className="field-group"><label className="field-label" htmlFor="width">Width <span>px</span></label><input id="width" type="number" min="1" max="12000" value={width} disabled={busy} onChange={(event) => changeWidth(event.target.value)} /></div>
@@ -438,8 +442,8 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
           </div>}
           {mode !== "compress" && <label className="checkbox-label"><input type="checkbox" checked={keepRatio} disabled={busy} onChange={(event) => setKeepRatio(event.target.checked)} /> Keep aspect ratio</label>}
           <div className="field-group"><label className="field-label" htmlFor="fit-mode">Fit mode</label><select id="fit-mode" value={fitMode} disabled={busy} onChange={(event) => setFitMode(event.target.value as FitMode)}><option value="stretch">Stretch to exact size</option><option value="crop">Crop to fill</option><option value="pad">Pad to fit</option></select></div>
-          <div className="field-group format-field"><label className="field-label" htmlFor="image-format">Output format</label><select id="image-format" value={format} disabled={busy} onChange={(event) => setFormat(event.target.value as ImageFormat)}><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select></div>
-          <button className="button process-button" type="button" onClick={() => void runImageProcessing()} disabled={busy}>
+          <div className="field-group format-field"><label className="field-label" htmlFor="image-format">Output format <span>optional</span></label><select id="image-format" value={format} disabled={busy} onChange={(event) => setFormat(event.target.value as ImageFormat | "")}><option value="">Keep original</option><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select></div>
+          <button className="button process-button" type="button" onClick={() => void runImageProcessing()} disabled={busy || !file}>
             {busy ? <><span className="spinner" /> Fitting your image…</> : <>{mode === "compress" ? "Compress image" : mode === "resize" ? "Resize image" : "Make it fit"} <span aria-hidden="true">→</span></>}
           </button>
           {busy && <div className="progress-track" role="progressbar" aria-label="Image compression progress" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${progress}%` }} /></div>}
@@ -484,7 +488,7 @@ export function ToolWorkspace({ initialMode }: { initialMode: ToolMode }) {
           <div className="verification-list">
             {mode !== "resize" || targetSize.trim() ? <span className={result.blob.size <= Number(targetSize) * (sizeUnit === "MB" ? 1024 * 1024 : 1024) ? "verified" : "not-verified"}>
               {result.blob.size <= Number(targetSize) * (sizeUnit === "MB" ? 1024 * 1024 : 1024) ? "✓" : "!"} Under {targetSize} {sizeUnit}</span> : null}
-            {mode !== "compress" && <span className="verified">✓ {result.width} × {result.height} px</span>}
+            {mode !== "compress" && (width.trim() || height.trim()) ? <span className="verified">✓ {result.width} × {result.height} px</span> : null}
             <span className="verified">✓ {formatLabel(result.format)}</span>
             <span className="saved-stat">Saved <strong>{file.size > result.blob.size ? `${((1 - result.blob.size / file.size) * 100).toFixed(1)}%` : "—"}</strong></span>
           </div>
