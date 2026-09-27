@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { SiteHeader } from "@/components/SiteHeader";
 import Link from "next/link";
 import "./globals.css";
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <SiteHeader />
         {children}
+        <Analytics />
         <footer className="site-footer">
           <div className="footer-inner">
             <Link href="/" className="brand"><span className="brand-mark" aria-hidden="true">f</span> FileFix</Link>
